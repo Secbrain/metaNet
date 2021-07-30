@@ -1,0 +1,39 @@
+import os
+import random
+
+import cfg
+import numpy as np
+import glob
+
+root_path = cfg.ROOT
+root2_path = cfg.ROOT2
+
+def split_dataset():
+    label_list = os.listdir(root_path)
+    for label in label_list:
+        mini_path = os.path.join(root_path,label)
+        mini_label_list = os.listdir(mini_path)
+        for mini_lable in mini_label_list:
+            label_data_list = []
+            data_list = glob.glob(os.path.join(mini_path,mini_lable,"*.npy"))
+            for data_path in data_list:
+                data_path2 = (os.path.join(root2_path,label,mini_lable,data_path.split('/')[-1]))
+                label_data_list.append((data_path,data_path2))
+
+            random.shuffle(label_data_list)
+            L = len(label_data_list)
+            with open(os.path.join(root_path,"train.txt"),"a") as f:
+                for i in range(int(L*0.7)):
+                    f.write(label_data_list[i][0] + " " + label_data_list[i][1] + " " + label)
+                    f.write('\n')
+            with open(os.path.join(root_path,"test.txt"),"a") as f:
+                for i in range(int(L*0.7),int(L*0.9)):
+                    f.write(label_data_list[i][0] + " " + label_data_list[i][1] + " " + label)
+                    f.write('\n')
+            with open(os.path.join(root_path,"valid.txt"),"a") as f:
+                for i in range(int(L * 0.9), L):
+                    f.write(label_data_list[i][0] + " " + label_data_list[i][1] + " " + label)
+                    f.write('\n')
+    print("output train.txt,test.txt,valid.txt in",root_path)
+
+split_dataset()
