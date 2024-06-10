@@ -112,13 +112,17 @@ def unique_features(front_frequent_path):
     fileObject.close()
 
 def meta_features(frequent_path, wide, front_frequent_number, output_dir):
+    # frequent_path = sys.argv[1]
+    # wide = int(sys.argv[2])
+    # front_frequent_number = int(sys.argv[3])
+
     meta_features_unique = {}
 
     json_val = None
     with open(frequent_path) as fp:
         json_val = json.load(fp)
     
-    csvdir = "andmal/andmal2020/mal-new-numlog2"
+    csvdir = "/mnt/traffic/xzy/andmal/andmal2020/mal-new-numlog2"
 
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -164,6 +168,7 @@ def meta_features(frequent_path, wide, front_frequent_number, output_dir):
             fileObject = open(os.path.join(output_dir, csv_name_front + '.json'), 'w')
             fileObject.write(data_json)
             fileObject.close()
+            print(csv_name_front + "输出完毕！")
             del df
             gc.collect()
             
@@ -171,26 +176,104 @@ def meta_features(frequent_path, wide, front_frequent_number, output_dir):
     fileObject = open(os.path.splitext(frequent_path)[0]+'-meta-features-fptree.json', 'w')
     fileObject.write(data_json)
     fileObject.close()
+    print("meta-features-fptree保存完毕！")
 
-def normalization_half(meta_features_path, output_dir):
+
+def meta_features_matrix(features_list_path, frequent_path, wide, front_frequent_number, output_dir):
+    # frequent_path = sys.argv[1]
+    # wide = int(sys.argv[2])
+    # front_frequent_number = int(sys.argv[3])
+    class_name_set = ['Adware', 'Ransomware','Scareware','SMSmalware', 'Benign'] #
+    meta_features_unique = {}
+
+    json_val = None
+    with open(frequent_path) as fp:
+        json_val = json.load(fp)
+
+    features_vector = ['size', 'author']
+
+    features_vector_dict = None
+    with open(features_list_path) as fp:
+        features_vector_dict = json.load(fp)
+    
+    features_vector.extend(features_vector_dict['features'][:782]) #排序得到的向量
+    
+    features_vector_map = {}
+    for i in range(wide):
+        features_vector_map[features_vector[i]] = i
+    
+    vectors = []
+
+    meta_val = np.zeros((5, wide), dtype=np.int32)
+
+    for class_num in range(len(class_name_set)):
+        class_name = class_name_set[class_num]
+        frequent_list = json_val[class_name]
+        fre_lines = front_frequent_number
+        
+        if front_frequent_number > len(frequent_list):
+            fre_lines = len(frequent_list)
+
+        for i in range(fre_lines):
+            frequent_set = frequent_list[i][0]
+            # frequent_num = frequent_list[i][1]
+            for fre_val in frequent_set:
+                if 'size:' in fre_val:
+                    meta_val[class_num][0] += 1
+                elif 'author:' in fre_val:
+                    meta_val[class_num][1] += 1
+                else:
+                    meta_val[class_num][features_vector_map[fre_val]] += 1
+
+    meta_val_T = meta_val.T
+    meta_val_T = (meta_val_T/meta_val_T.max(axis=0) + 1)/2
+    # meta_features_unique[csv_name_front] = meta_val_T.tolist()
+    np.save(output_dir + '-meta-features.npy', meta_val_T)
+
+def static_with_metafeatures_input2_csv_meta_features(metafeatures_path, sample_path, output_dir):
     metafeatures = np.load(metafeatures_path)
-    metafeatures = (metafeatures + 1)/2
-    np.save(os.path.join(output_dir, 'frequency_output_20-1-20-meta-features-half.npy'), metafeatures)
+    metafeatures = metafeatures.T
+    vectors = pd.read_csv(sample_path, header=None)
+    vectors[3] = vectors[3]/vectors[3].max()
+    vectors_unique = list(vectors[4].unique())
+    for i in range(len(vectors_unique)):
+        vectors[4][vectors[4] == vectors_unique[i]] = i
+    vectors_values = vectors.iloc[:, 3:].values
+    res = np.array([])
+    for i in range(len(vectors)):
+        res_val = np.array([])
+        for j in range(len(metafeatures)):
+            res_val = np.append(res_val, vectors_values[i] * metafeatures[j])
+        res_val = np.append(vectors.iloc[i, :3].values, res_val)
+        if i == 0:
+            res = np.array([res_val])
+        else:
+            res = np.append(res, [res_val], axis = 0)
+
+    vector_val_df = pd.DataFrame(res)
+    vector_val_df.to_csv(os.path.join(output_dir, 'vectors_features_data_with_metafeatures.csv'),quoting=1,header=False,index=False)
 
 if __name__ == "__main__":
 
     minlength = 1
     minnum = 20
     
-    allfiles_dir = "features_union_pre_with_noapi_features784"
+    allfiles_dir = "./"
     filtering_input_dir = os.path.join(allfiles_dir, 'frequency_output_20')
     filtering_output_dir = os.path.join(allfiles_dir, 'frequency_output_20-'+ str(minlength) + "-" + str(minnum))
-    # freqres_filtering(allfiles_dir, filtering_input_dir, filtering_output_dir, minlength, minnum)
+    freqres_filtering(allfiles_dir, filtering_input_dir, filtering_output_dir, minlength, minnum)
 
     front_frequent_path = filtering_output_dir + '.json'
-    # unique_features(front_frequent_path)
+    unique_features(front_frequent_path)
+
+    features_list_path = './features_name_examples.json'
+    frequent_path = os.path.splitext(front_frequent_path)[0]+'-unique-class.json'
+    wide = 784
+    front_frequent_number = 40
+    meta_features_matrix(features_list_path, frequent_path, wide, front_frequent_number, filtering_output_dir)
 
     metafeatures_path = os.path.join(allfiles_dir, "frequency_output_20-1-20-meta-features.npy")
-    sample_path = os.path.join(allfiles_dir, "vectors_noapi_features784.csv")
-    
-    # normalization_half(os.path.join(allfiles_dir, 'frequency_output_20-1-20-meta-features.npy'), allfiles_dir)
+    sample_path = os.path.join(allfiles_dir, "vectors_features_data.csv")
+
+    #乘以meta-features的静态特征输出csv
+    static_with_metafeatures_input2_csv_meta_features(metafeatures_path, sample_path, allfiles_dir)

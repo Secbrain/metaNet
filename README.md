@@ -12,7 +12,7 @@ The folder "Virustotal" includes the detection results of tools on virustotal.
 The folder "KFeatures" illustrates the first K-dimensional features we used.
 
 ## Code
-The folder "Code" includes part of the source code of metaNet and its installation and usage tutorials. We promise to disclose all the source code when the paper is accepted.
+The folder "Code" includes the source code of metaNet and its installation and usage tutorials. 
 
 ## DApps
 

@@ -5,10 +5,14 @@ from data_loader import get_loader
 from torch.backends import cudnn
 import random
 import cfg
-
+import numpy as np
 
 def main(config):
     cudnn.benchmark = True
+    if config.model_type not in ['U_Net', 'R2U_Net', 'AttU_Net', 'R2AttU_Net', 'HSU_Net']:
+        print('ERROR!! model_type should be selected in U_Net/R2U_Net/AttU_Net/R2AttU_Net/HSU_Net')
+        print('Your input for model_type was %s' % config.model_type)
+        return
 
     # Create directories if not exist
     if not os.path.exists(config.model_path):
@@ -40,6 +44,7 @@ def main(config):
                              num_workers=config.num_workers,
                              mode='test')
 
+    print(config.output_ch)
     solver = Solver(config, train_loader, valid_loader, test_loader)
 
     # Train and sample the images
@@ -47,7 +52,6 @@ def main(config):
         solver.train()
     elif config.mode == 'test':
         solver.test()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -74,6 +78,7 @@ if __name__ == '__main__':
 
     # misc
     parser.add_argument('--mode', type=str, default='train')
+    parser.add_argument('--model_type', type=str, default='HSU_Net', help='U_Net/R2U_Net/AttU_Net/R2AttU_Net/HSU_Net')
     parser.add_argument('--model_path', type=str, default=cfg.model_save_path)
     parser.add_argument('--result_path', type=str, default=cfg.result_path)
 

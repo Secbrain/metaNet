@@ -6,7 +6,7 @@ This folder includes the pcap traffic files of DApps.
 
 ## Code
 
-This folder currently includes the feature extraction script.
+This folder currently includes the feature extraction script and HSU-Net with only one input type.
 
 ## Feature
 

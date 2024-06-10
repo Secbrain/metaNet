@@ -37,11 +37,18 @@ def get_dataset(mode="train"):
             data2 = np.load(data2_path,allow_pickle=True).astype(float)
             data2 = data2.reshape(5,28,28)
 
-            data1 = tensor_split(torch.tensor(data1), 3, [cfg.C, cfg.L, cfg.W])
+            # data1 = tensor_split(torch.tensor(data1), 3, [cfg.C, cfg.L, cfg.W])
+            data1 = data1.reshape(10,128,150)
+            data1 = data1[:,:112,:112]
             img1.append(data1)
             img2.append(data2)
             labels.append(cfg.Class_Values[data_label])
 
+            '''for j in range(10):
+                data1j = tensor_split(torch.tensor(data1[j]),2,[56,56])
+                img1.append([data1j])
+                img2.append(data2)
+                labels.append(cfg.Class_Values[data_label])'''
             #data = tensor_split(torch.tensor(data), 3, [cfg.C, cfg.L, cfg.W])
             #img.append(data)
             #labels.append(cfg.Class_Values[data_label])
